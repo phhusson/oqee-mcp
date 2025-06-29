@@ -136,16 +136,21 @@ def get_epg_live():
         results = []
         for channel_id, channel_data in channels.items():
             channel_name = channel_data.get("name")
+            lcn = channel_data.get("lcn")
             if channel_id in epg_entries:
                 programs = epg_entries[channel_id]
                 current_program = programs[0].get("live", {}).get("title") if len(programs) >= 1 else None
                 next_program = programs[1].get("live", {}).get("title") if len(programs) >= 2 else None
                 
                 results.append({
+                    "lcn": lcn,
                     "channel": channel_name,
                     "current_program": current_program,
                     "next_program": next_program
                 })
+        
+        # Sort results by LCN
+        results.sort(key=lambda x: x.get("lcn", float('inf')))
         
         return results
 
