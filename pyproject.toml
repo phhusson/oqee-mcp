@@ -7,7 +7,7 @@ name = "oqee-mcp-server"
 version="0.1.0"
 description = "A MCP server allowing some access to Oqee TV content"
 authors = [ { name="Pierre-Hugues Husson", email="phh@phh.me"} ]
-dependencies = [ "mcp", "requests" ]
+dependencies = [ "mcp[cli]", "requests" ]
 
 [project.scripts]
 oqee-mcp-server = 'mcp_server:main'
