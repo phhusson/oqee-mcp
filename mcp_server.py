@@ -2,6 +2,7 @@
 
 import requests
 import json
+from urllib.parse import quote
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("Oqee")
@@ -69,7 +70,8 @@ def search_content(query):
     Searches for content on OQEE.
     """
     try:
-        response = requests.get(f"https://api.oqee.net/api/v3/search/{query}")
+        encoded_query = quote(query)
+        response = requests.get(f"https://api.oqee.net/api/v3/search/{encoded_query}")
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
