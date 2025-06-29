@@ -67,13 +67,43 @@ def play_channel(channel_name):
 @mcp.tool()
 def search_content(query):
     """
-    Searches for content on OQEE.
+    Searches for content on OQEE and returns a simplified format.
     """
     try:
         encoded_query = quote(query)
         response = requests.get(f"https://api.oqee.net/api/v3/search/{encoded_query}")
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        
+        results = []
+        for item in data.get("result", []):
+            result_item = {"type": item.get("type")}
+            
+            if "collection" in item:
+                collection_data = item.get("collection", {})
+                result_item["title"] = collection_data.get("title")
+                result_item["type"] = collection_data.get("type")
+                result_item["id"] = collection_data.get("id")
+                result_item["url"] = f"https://oqee.tv/search-collection/{result_item['id']}/all"
+            
+            elif "replay_collection" in item:
+                replay_collection_data = item.get("replay_collection", {})
+                result_item["title"] = replay_collection_data.get("title")
+                result_item["id"] = replay_collection_data.get("id")
+                result_item["url"] = f"https://oqee.tv/search-replay_collection/{result_item['id']}/all"
+
+            elif "content" in item:
+                content_data = item.get("content", {})
+                result_item["title"] = content_data.get("title")
+                result_item["description"] = content_data.get("description")
+                result_item["original_title"] = content_data.get("original_title")
+                result_item["id"] = content_data.get("id")
+                if content_data.get("display_as") == "vod":
+                    result_item["url"] = f"https://oqee.tv/vod/contents/{result_item['id']}"
+
+            results.append(result_item)
+            
+        return results
     except requests.exceptions.RequestException as e:
         print(f"Error searching for content: {e}")
         return None
