@@ -178,7 +178,6 @@ def _get_epg_by_datetime(timestamp: datetime.datetime):
 def get_epg(time_input: Union[str, int] = None):
     """
     Lists the current and next program for all channels based on a given timestamp, HH:MM, or MM/DD HH:MM.
-    If no input is provided, it defaults to the current time.
     """
     if time_input is None:
         timestamp = datetime.datetime.now()
@@ -208,7 +207,7 @@ def get_epg_live():
     """
     Lists the current and next program for all channels.
     """
-    return get_epg(datetime.datetime.now().timestamp())
+    return _get_epg_by_datetime(datetime.datetime.now())
 
 @mcp.tool()
 def get_epg_evening():
@@ -216,7 +215,7 @@ def get_epg_evening():
     Lists the current and next program for all channels for the evening.
     """
     evening_time = datetime.datetime.now().replace(hour=21, minute=30, second=0, microsecond=0)
-    return get_epg(evening_time.timestamp())
+    return _get_epg_by_datetime(evening_time)
 
 if __name__ == "__main__":
     # Example usage of the new get_epg function
