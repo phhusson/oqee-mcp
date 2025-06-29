@@ -283,6 +283,17 @@ def get_epg_evening():
     evening_time = datetime.datetime.now().replace(hour=21, minute=30, second=0, microsecond=0)
     return _get_epg_by_datetime(evening_time)
 
+def main():
+    import argparse
+    argparser = argparse.ArgumentParser(description="Woob MCP server")
+    argparser.add_argument('--sse', action='store_true', help='Run in SSE mode (default stdio)')
+    args = argparser.parse_args()
+
+    transport = 'stdio'
+    if args.sse:
+        transport = 'sse'
+    mcp.run(transport=transport)
+
 if __name__ == "__main__":
     results = search_content("bigflo")
     print(json.dumps(results, indent=2))
