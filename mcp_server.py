@@ -90,27 +90,27 @@ def play_channel(channel_name):
         print("Service plan not loaded.")
         return
         
-        channels = service_plan.get("result", {}).get("channels", {})
-        if not channels:
-            print("No channels found in the service plan.")
-            return
+    channels = service_plan.get("result", {}).get("channels", {})
+    if not channels:
+        print("No channels found in the service plan.")
+        return
 
-        best_match = None
-        min_distance = float('inf')
+    best_match = None
+    min_distance = float('inf')
 
-        for channel_id, channel_data in channels.items():
-            name = channel_data.get("name", "")
-            distance = levenshtein_distance(channel_name.lower(), name.lower())
-            if distance < min_distance:
-                min_distance = distance
-                best_match = channel_data
+    for channel_id, channel_data in channels.items():
+        name = channel_data.get("name", "")
+        distance = levenshtein_distance(channel_name.lower(), name.lower())
+        if distance < min_distance:
+            min_distance = distance
+            best_match = channel_data
 
-        if best_match:
-            channel_id = best_match.get('id')
-            url = f"https://oqee.tv/home/channels/{channel_id}/play"
-            return url
-        else:
-            return None
+    if best_match:
+        channel_id = best_match.get('id')
+        url = f"https://oqee.tv/home/channels/{channel_id}/play"
+        return url
+    else:
+        return None
 
 @mcp.tool()
 def search_content(query):
@@ -191,54 +191,54 @@ def _get_epg_by_datetime(timestamp: datetime.datetime):
     if not service_plan:
         print("Service plan not loaded.")
         return
-        channels = service_plan.get("result", {}).get("channels", {})
-        channel_list = service_plan.get("result", {}).get("channel_list", [])
+    channels = service_plan.get("result", {}).get("channels", {})
+    channel_list = service_plan.get("result", {}).get("channel_list", [])
 
-        lcn_mapping = {}
-        for channel_info in channel_list:
-            lcn_mapping[str(channel_info.get("channel_id"))] = channel_info.get("number")
-        
-        current_time = timestamp.replace(minute=0, second=0, microsecond=0)
-        current_timestamp = int(current_time.timestamp())
-        epg_response = requests.get(f"https://api.oqee.net/api/v1/epg/all/{current_timestamp}")
-        epg_response.raise_for_status()
-        epg_data = epg_response.json()
-        epg_entries = epg_data.get("result", {}).get("entries", {})
-        
-        results = []
-        for channel_id, channel_data in channels.items():
-            channel_name = channel_data.get("name")
-            lcn = lcn_mapping.get(channel_id)
-            if channel_id in epg_entries:
-                programs = epg_entries[channel_id]
-                programs = [x for x in programs if x['live']['end'] >= timestamp.timestamp()]
-                current_program_data = programs[0].get("live", {}) if len(programs) >= 1 else None
-                next_program_data = programs[1].get("live", {}) if len(programs) >= 2 else None
+    lcn_mapping = {}
+    for channel_info in channel_list:
+        lcn_mapping[str(channel_info.get("channel_id"))] = channel_info.get("number")
+    
+    current_time = timestamp.replace(minute=0, second=0, microsecond=0)
+    current_timestamp = int(current_time.timestamp())
+    epg_response = requests.get(f"https://api.oqee.net/api/v1/epg/all/{current_timestamp}")
+    epg_response.raise_for_status()
+    epg_data = epg_response.json()
+    epg_entries = epg_data.get("result", {}).get("entries", {})
 
-                current_program_title = current_program_data.get("title") if current_program_data else None
-                next_program_title = next_program_data.get("title") if next_program_data else None
+    results = []
+    for channel_id, channel_data in channels.items():
+        channel_name = channel_data.get("name")
+        lcn = lcn_mapping.get(channel_id)
+        if channel_id in epg_entries:
+            programs = epg_entries[channel_id]
+            programs = [x for x in programs if x['live']['end'] >= timestamp.timestamp()]
+            current_program_data = programs[0].get("live", {}) if len(programs) >= 1 else None
+            next_program_data = programs[1].get("live", {}) if len(programs) >= 2 else None
 
-                current_program_start_time = datetime.datetime.fromtimestamp(current_program_data.get("start")).strftime("%H:%M") if current_program_data and current_program_data.get("start") else None
-                current_program_end_time = datetime.datetime.fromtimestamp(current_program_data.get("end")).strftime("%H:%M") if current_program_data and current_program_data.get("end") else None
-                
-                next_program_start_time = datetime.datetime.fromtimestamp(next_program_data.get("start")).strftime("%H:%M") if next_program_data and next_program_data.get("start") else None
-                next_program_end_time = datetime.datetime.fromtimestamp(next_program_data.get("end")).strftime("%H:%M") if next_program_data and next_program_data.get("end") else None
+            current_program_title = current_program_data.get("title") if current_program_data else None
+            next_program_title = next_program_data.get("title") if next_program_data else None
 
-                results.append({
-                    "lcn": lcn,
-                    "channel": channel_name,
-                    "current_program": current_program_title,
-                    "current_program_start_time": current_program_start_time,
-                    "current_program_end_time": current_program_end_time,
-                    "next_program": next_program_title,
-                    "next_program_start_time": next_program_start_time,
-                    "next_program_end_time": next_program_end_time
-                })
-        
-        # Sort results by LCN
-        results.sort(key=lambda x: (x.get("lcn") is None, x.get("lcn")))
-        
-        return results
+            current_program_start_time = datetime.datetime.fromtimestamp(current_program_data.get("start")).strftime("%H:%M") if current_program_data and current_program_data.get("start") else None
+            current_program_end_time = datetime.datetime.fromtimestamp(current_program_data.get("end")).strftime("%H:%M") if current_program_data and current_program_data.get("end") else None
+
+            next_program_start_time = datetime.datetime.fromtimestamp(next_program_data.get("start")).strftime("%H:%M") if next_program_data and next_program_data.get("start") else None
+            next_program_end_time = datetime.datetime.fromtimestamp(next_program_data.get("end")).strftime("%H:%M") if next_program_data and next_program_data.get("end") else None
+
+            results.append({
+                "lcn": lcn,
+                "channel": channel_name,
+                "current_program": current_program_title,
+                "current_program_start_time": current_program_start_time,
+                "current_program_end_time": current_program_end_time,
+                "next_program": next_program_title,
+                "next_program_start_time": next_program_start_time,
+                "next_program_end_time": next_program_end_time
+            })
+
+    # Sort results by LCN
+    results.sort(key=lambda x: (x.get("lcn") is None, x.get("lcn")))
+
+    return results
 
 @mcp.tool()
 def get_epg(time_input: Union[str, int] = None):
