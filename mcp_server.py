@@ -111,10 +111,9 @@ def search_content(query):
         return None
 
 
-@mcp.tool()
-def get_epg_live():
+def get_epg(timestamp: datetime.datetime):
     """
-    Lists the current and next program for all channels.
+    Lists the current and next program for all channels based on a given timestamp.
     """
     try:
         # Get channel list
@@ -128,17 +127,7 @@ def get_epg_live():
         for channel_info in channel_list:
             lcn_mapping[str(channel_info.get("channel_id"))] = channel_info.get("number")
         
-        # Get EPG data
-        # Get EPG data for the beginning of the current day (UTC)
-        now = datetime.datetime.now(datetime.timezone.utc)
-        # Round down to the nearest past half-hour
-        minutes = now.minute
-        if minutes < 30:
-            rounded_minutes = 0
-        else:
-            rounded_minutes = 30
-        
-        current_time = now.replace(minute=rounded_minutes, second=0, microsecond=0)
+        current_time = timestamp.replace(minute=0, second=0, microsecond=0)
         current_timestamp = int(current_time.timestamp())
         epg_response = requests.get(f"https://api.oqee.net/api/v1/epg/all/{current_timestamp}")
         epg_response.raise_for_status()
@@ -151,6 +140,7 @@ def get_epg_live():
             lcn = lcn_mapping.get(channel_id)
             if channel_id in epg_entries:
                 programs = epg_entries[channel_id]
+                programs = [x for x in programs if x['live']['end'] >= timestamp.timestamp()]
                 current_program = programs[0].get("live", {}).get("title") if len(programs) >= 1 else None
                 next_program = programs[1].get("live", {}).get("title") if len(programs) >= 2 else None
                 
@@ -170,7 +160,24 @@ def get_epg_live():
         print(f"Error fetching data: {e}")
         return None
 
+@mcp.tool()
+def get_epg_live():
+    """
+    Lists the current and next program for all channels.
+    """
+    return get_epg(datetime.datetime.now())
+
+@mcp.tool()
+def get_epg_evening():
+    """
+    Lists the current and next program for all channels for the evening (8 PM).
+    """
+    evening_time = datetime.datetime.now().replace(hour=21, minute=0, second=0, microsecond=0)
+    return get_epg(evening_time)
+
 if __name__ == "__main__":
-    results = get_epg_live()
+    results = get_epg_evening()
     if results:
         print(json.dumps(results, indent=2))
+    else:
+        print("Failed to retrieve EPG evening data.")
