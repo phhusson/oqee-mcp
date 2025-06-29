@@ -219,8 +219,33 @@ def get_epg_evening():
     return get_epg(evening_time.timestamp())
 
 if __name__ == "__main__":
-    results = get_epg_evening()
-    if results:
-        print(json.dumps(results, indent=2))
+    # Example usage of the new get_epg function
+    print("\n--- Current EPG ---")
+    results_current = get_epg()
+    if results_current:
+        print(json.dumps(results_current, indent=2))
     else:
-        print("Failed to retrieve EPG evening data.")
+        print("Failed to retrieve current EPG data.")
+
+    print("\n--- Evening EPG (21:00) ---")
+    results_evening = get_epg("21:00")
+    if results_evening:
+        print(json.dumps(results_evening, indent=2))
+    else:
+        print("Failed to retrieve evening EPG data.")
+
+    print("\n--- EPG for a specific Unix timestamp (example: 2025-06-29 15:00:00 UTC) ---")
+    # This timestamp corresponds to 2025-06-29 15:00:00 UTC
+    example_timestamp = 1751209200
+    results_timestamp = get_epg(example_timestamp)
+    if results_timestamp:
+        print(json.dumps(results_timestamp, indent=2))
+    else:
+        print(f"Failed to retrieve EPG data for timestamp {example_timestamp}.")
+
+    print("\n--- EPG for a specific date and time (example: 07/01 12:00) ---")
+    results_specific_date = get_epg("07/01 12:00")
+    if results_specific_date:
+        print(json.dumps(results_specific_date, indent=2))
+    else:
+        print("Failed to retrieve EPG data for 07/01 12:00.")
