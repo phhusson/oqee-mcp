@@ -141,14 +141,27 @@ def get_epg(timestamp: datetime.datetime):
             if channel_id in epg_entries:
                 programs = epg_entries[channel_id]
                 programs = [x for x in programs if x['live']['end'] >= timestamp.timestamp()]
-                current_program = programs[0].get("live", {}).get("title") if len(programs) >= 1 else None
-                next_program = programs[1].get("live", {}).get("title") if len(programs) >= 2 else None
+                current_program_data = programs[0].get("live", {}) if len(programs) >= 1 else None
+                next_program_data = programs[1].get("live", {}) if len(programs) >= 2 else None
+
+                current_program_title = current_program_data.get("title") if current_program_data else None
+                next_program_title = next_program_data.get("title") if next_program_data else None
+
+                current_program_start_time = datetime.datetime.fromtimestamp(current_program_data.get("start")).strftime("%H:%M") if current_program_data and current_program_data.get("start") else None
+                current_program_end_time = datetime.datetime.fromtimestamp(current_program_data.get("end")).strftime("%H:%M") if current_program_data and current_program_data.get("end") else None
                 
+                next_program_start_time = datetime.datetime.fromtimestamp(next_program_data.get("start")).strftime("%H:%M") if next_program_data and next_program_data.get("start") else None
+                next_program_end_time = datetime.datetime.fromtimestamp(next_program_data.get("end")).strftime("%H:%M") if next_program_data and next_program_data.get("end") else None
+
                 results.append({
                     "lcn": lcn,
                     "channel": channel_name,
-                    "current_program": current_program,
-                    "next_program": next_program
+                    "current_program": current_program_title,
+                    "current_program_start_time": current_program_start_time,
+                    "current_program_end_time": current_program_end_time,
+                    "next_program": next_program_title,
+                    "next_program_start_time": next_program_start_time,
+                    "next_program_end_time": next_program_end_time
                 })
         
         # Sort results by LCN
