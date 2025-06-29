@@ -122,6 +122,11 @@ def get_epg_live():
         service_plan_response.raise_for_status()
         service_plan = service_plan_response.json()
         channels = service_plan.get("result", {}).get("channels", {})
+        channel_list = service_plan.get("result", {}).get("channel_list", [])
+
+        lcn_mapping = {}
+        for channel_info in channel_list:
+            lcn_mapping[str(channel_info.get("channel_id"))] = channel_info.get("number")
         
         # Get EPG data
         # Get EPG data for the beginning of the current day (UTC)
@@ -136,7 +141,7 @@ def get_epg_live():
         results = []
         for channel_id, channel_data in channels.items():
             channel_name = channel_data.get("name")
-            lcn = channel_data.get("lcn")
+            lcn = lcn_mapping.get(channel_id)
             if channel_id in epg_entries:
                 programs = epg_entries[channel_id]
                 current_program = programs[0].get("live", {}).get("title") if len(programs) >= 1 else None
@@ -150,7 +155,7 @@ def get_epg_live():
                 })
         
         # Sort results by LCN
-        results.sort(key=lambda x: x.get("lcn", float('inf')))
+        results.sort(key=lambda x: (x.get("lcn") is None, x.get("lcn")))
         
         return results
 
@@ -159,6 +164,6 @@ def get_epg_live():
         return None
 
 if __name__ == "__main__":
-    results = search_content("Envoyé spécial")
+    results = get_epg_live()
     if results:
         print(json.dumps(results, indent=2))
