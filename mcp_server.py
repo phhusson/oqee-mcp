@@ -10,6 +10,38 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("Oqee")
 
+_SERVICE_PLAN_CACHE = None
+
+def _load_service_plan_cache():
+    global _SERVICE_PLAN_CACHE
+    if _SERVICE_PLAN_CACHE is None:
+        try:
+            response = requests.get("https://api.oqee.net/api/v5/service_plan")
+            response.raise_for_status()
+            _SERVICE_PLAN_CACHE = response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching service plan: {e}")
+            _SERVICE_PLAN_CACHE = {}
+        except json.JSONDecodeError:
+            print("Error parsing service plan response.")
+            _SERVICE_PLAN_CACHE = {}
+
+_load_service_plan_cache()
+
+def _load_service_plan_cache():
+    global _SERVICE_PLAN_CACHE
+    if _SERVICE_PLAN_CACHE is None:
+        try:
+            response = requests.get("https://api.oqee.net/api/v5/service_plan")
+            response.raise_for_status()
+            _SERVICE_PLAN_CACHE = response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching service plan: {e}")
+            _SERVICE_PLAN_CACHE = {}
+        except json.JSONDecodeError:
+            print("Error parsing service plan response.")
+            _SERVICE_PLAN_CACHE = {}
+
 def levenshtein_distance(s1, s2):
     if len(s1) < len(s2):
         return levenshtein_distance(s2, s1)
@@ -35,10 +67,11 @@ def play_channel(channel_name):
     Finds the closest channel to the given name from the OQEE service plan
     and prints its information.
     """
-    try:
-        response = requests.get("https://api.oqee.net/api/v5/service_plan")
-        response.raise_for_status()  # Raise an exception for bad status codes
-        service_plan = response.json()
+    _load_service_plan_cache()
+    service_plan = _SERVICE_PLAN_CACHE
+    if not service_plan:
+        print("Service plan not loaded.")
+        return
         
         channels = service_plan.get("result", {}).get("channels", {})
         if not channels:
@@ -61,11 +94,6 @@ def play_channel(channel_name):
             return url
         else:
             return None
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching service plan: {e}")
-    except json.JSONDecodeError:
-        print("Error parsing service plan response.")
 
 @mcp.tool()
 def search_content(query):
@@ -116,11 +144,11 @@ def _get_epg_by_datetime(timestamp: datetime.datetime):
     """
     Lists the current and next program for all channels based on a given timestamp.
     """
-    try:
-        # Get channel list
-        service_plan_response = requests.get("https://api.oqee.net/api/v5/service_plan")
-        service_plan_response.raise_for_status()
-        service_plan = service_plan_response.json()
+    _load_service_plan_cache()
+    service_plan = _SERVICE_PLAN_CACHE
+    if not service_plan:
+        print("Service plan not loaded.")
+        return
         channels = service_plan.get("result", {}).get("channels", {})
         channel_list = service_plan.get("result", {}).get("channel_list", [])
 
@@ -170,10 +198,6 @@ def _get_epg_by_datetime(timestamp: datetime.datetime):
         
         return results
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data: {e}")
-        return None
-
 @mcp.tool()
 def get_epg(time_input: Union[str, int] = None):
     """
@@ -218,33 +242,5 @@ def get_epg_evening():
     return _get_epg_by_datetime(evening_time)
 
 if __name__ == "__main__":
-    # Example usage of the new get_epg function
-    print("\n--- Current EPG ---")
-    results_current = get_epg()
-    if results_current:
-        print(json.dumps(results_current, indent=2))
-    else:
-        print("Failed to retrieve current EPG data.")
-
-    print("\n--- Evening EPG (21:00) ---")
-    results_evening = get_epg("21:00")
-    if results_evening:
-        print(json.dumps(results_evening, indent=2))
-    else:
-        print("Failed to retrieve evening EPG data.")
-
-    print("\n--- EPG for a specific Unix timestamp (example: 2025-06-29 15:00:00 UTC) ---")
-    # This timestamp corresponds to 2025-06-29 15:00:00 UTC
-    example_timestamp = 1751209200
-    results_timestamp = get_epg(example_timestamp)
-    if results_timestamp:
-        print(json.dumps(results_timestamp, indent=2))
-    else:
-        print(f"Failed to retrieve EPG data for timestamp {example_timestamp}.")
-
-    print("\n--- EPG for a specific date and time (example: 07/01 12:00) ---")
-    results_specific_date = get_epg("07/01 12:00")
-    if results_specific_date:
-        print(json.dumps(results_specific_date, indent=2))
-    else:
-        print("Failed to retrieve EPG data for 07/01 12:00.")
+    results = search_content("bigflo")
+    print(json.dumps(results, indent=2))
