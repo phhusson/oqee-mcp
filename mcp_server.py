@@ -2,6 +2,8 @@
 
 import requests
 import json
+import time
+import datetime
 from urllib.parse import quote
 from mcp.server.fastmcp import FastMCP
 
@@ -106,6 +108,49 @@ def search_content(query):
         return results
     except requests.exceptions.RequestException as e:
         print(f"Error searching for content: {e}")
+        return None
+
+
+@mcp.tool()
+def get_epg_live():
+    """
+    Lists the current and next program for all channels.
+    """
+    try:
+        # Get channel list
+        service_plan_response = requests.get("https://api.oqee.net/api/v5/service_plan")
+        service_plan_response.raise_for_status()
+        service_plan = service_plan_response.json()
+        channels = service_plan.get("result", {}).get("channels", {})
+        
+        # Get EPG data
+        # Get EPG data for the beginning of the current day (UTC)
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+        start_of_day = datetime.datetime(today.year, today.month, today.day, tzinfo=datetime.timezone.utc)
+        current_timestamp = int(start_of_day.timestamp())
+        epg_response = requests.get(f"https://api.oqee.net/api/v1/epg/all/{current_timestamp}")
+        epg_response.raise_for_status()
+        epg_data = epg_response.json()
+        epg_entries = epg_data.get("result", {}).get("entries", {})
+        
+        results = []
+        for channel_id, channel_data in channels.items():
+            channel_name = channel_data.get("name")
+            if channel_id in epg_entries:
+                programs = epg_entries[channel_id]
+                current_program = programs[0].get("live", {}).get("title") if len(programs) >= 1 else None
+                next_program = programs[1].get("live", {}).get("title") if len(programs) >= 2 else None
+                
+                results.append({
+                    "channel": channel_name,
+                    "current_program": current_program,
+                    "next_program": next_program
+                })
+        
+        return results
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
         return None
 
 if __name__ == "__main__":
