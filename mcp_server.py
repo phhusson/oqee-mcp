@@ -130,9 +130,16 @@ def get_epg_live():
         
         # Get EPG data
         # Get EPG data for the beginning of the current day (UTC)
-        today = datetime.datetime.now(datetime.timezone.utc).date()
-        start_of_day = datetime.datetime(today.year, today.month, today.day, tzinfo=datetime.timezone.utc)
-        current_timestamp = int(start_of_day.timestamp())
+        now = datetime.datetime.now(datetime.timezone.utc)
+        # Round down to the nearest past half-hour
+        minutes = now.minute
+        if minutes < 30:
+            rounded_minutes = 0
+        else:
+            rounded_minutes = 30
+        
+        current_time = now.replace(minute=rounded_minutes, second=0, microsecond=0)
+        current_timestamp = int(current_time.timestamp())
         epg_response = requests.get(f"https://api.oqee.net/api/v1/epg/all/{current_timestamp}")
         epg_response.raise_for_status()
         epg_data = epg_response.json()
