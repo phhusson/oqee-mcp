@@ -42,6 +42,23 @@ def _load_service_plan_cache():
             print("Error parsing service plan response.")
             _SERVICE_PLAN_CACHE = {}
 
+def _get_channel_details(channel_id):
+    _load_service_plan_cache()
+    service_plan = _SERVICE_PLAN_CACHE
+    if not service_plan:
+        return None, None
+
+    channels = service_plan.get("result", {}).get("channels", {})
+    channel_list = service_plan.get("result", {}).get("channel_list", [])
+
+    channel_name = channels.get(str(channel_id), {}).get("name")
+    lcn = None
+    for channel_info in channel_list:
+        if str(channel_info.get("channel_id")) == str(channel_id):
+            lcn = channel_info.get("number")
+            break
+    return channel_name, lcn
+
 def levenshtein_distance(s1, s2):
     if len(s1) < len(s2):
         return levenshtein_distance(s2, s1)
@@ -131,6 +148,31 @@ def search_content(query):
                 result_item["id"] = content_data.get("id")
                 if content_data.get("display_as") == "vod":
                     result_item["url"] = f"https://oqee.tv/vod/contents/{result_item['id']}"
+                elif content_data.get("display_as") == "diffusion":
+                    diffusions = content_data.get("diffusions", [])
+                    if diffusions:
+                        first_diffusion = diffusions[0]
+                        channel_id = first_diffusion.get("channel_id")
+                        start_time = first_diffusion.get("start")
+                        
+                        channel_name, channel_number = _get_channel_details(channel_id)
+                        
+                        if channel_name:
+                            result_item["channel_name"] = channel_name
+                        if channel_number:
+                            result_item["channel_number"] = channel_number
+                        if start_time:
+                            dt_object = datetime.datetime.fromtimestamp(start_time)
+                            result_item["broadcast_time"] = dt_object.strftime("%m/%d %H:%M")
+                        
+                        end_time = first_diffusion.get("end")
+                        if end_time:
+                            dt_end_object = datetime.datetime.fromtimestamp(end_time)
+                            result_item["broadcast_end_time"] = dt_end_object.strftime("%m/%d %H:%M")
+                            if start_time:
+                                duration_seconds = end_time - start_time
+                                duration_minutes = duration_seconds // 60
+                                result_item["duration"] = f"{duration_minutes} minutes"
 
             results.append(result_item)
             
