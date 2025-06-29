@@ -170,9 +170,9 @@ def get_epg_live():
 @mcp.tool()
 def get_epg_evening():
     """
-    Lists the current and next program for all channels for the evening (8 PM).
+    Lists the current and next program for all channels for the evening.
     """
-    evening_time = datetime.datetime.now().replace(hour=21, minute=0, second=0, microsecond=0)
+    evening_time = datetime.datetime.now().replace(hour=21, minute=30, second=0, microsecond=0)
     return get_epg(evening_time)
 
 if __name__ == "__main__":
