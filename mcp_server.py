@@ -4,6 +4,7 @@ import requests
 import json
 import time
 import datetime
+from typing import Union
 from urllib.parse import quote
 from mcp.server.fastmcp import FastMCP
 
@@ -111,7 +112,7 @@ def search_content(query):
         return None
 
 
-def get_epg(timestamp: datetime.datetime):
+def _get_epg_by_datetime(timestamp: datetime.datetime):
     """
     Lists the current and next program for all channels based on a given timestamp.
     """
@@ -174,11 +175,40 @@ def get_epg(timestamp: datetime.datetime):
         return None
 
 @mcp.tool()
+def get_epg(time_input: Union[str, int] = None):
+    """
+    Lists the current and next program for all channels based on a given timestamp, HH:MM, or MM/DD HH:MM.
+    If no input is provided, it defaults to the current time.
+    """
+    if time_input is None:
+        timestamp = datetime.datetime.now()
+    elif isinstance(time_input, int):
+        timestamp = datetime.datetime.fromtimestamp(time_input)
+    elif isinstance(time_input, str):
+        try:
+            # Try parsing as HH:MM
+            hour, minute = map(int, time_input.split(':'))
+            timestamp = datetime.datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+        except ValueError:
+            try:
+                # Try parsing as MM/DD HH:MM
+                month_day, time_part = time_input.split(' ')
+                month, day = map(int, month_day.split('/'))
+                hour, minute = map(int, time_part.split(':'))
+                timestamp = datetime.datetime.now().replace(month=month, day=day, hour=hour, minute=minute, second=0, microsecond=0)
+            except ValueError:
+                raise ValueError("Invalid time format. Use HH:MM, MM/DD HH:MM, or a Unix timestamp (int).")
+    else:
+        raise ValueError("Invalid time input. Must be a string (HH:MM or MM/DD HH:MM) or a Unix timestamp (int).")
+    
+    return _get_epg_by_datetime(timestamp)
+
+@mcp.tool()
 def get_epg_live():
     """
     Lists the current and next program for all channels.
     """
-    return get_epg(datetime.datetime.now())
+    return get_epg(datetime.datetime.now().timestamp())
 
 @mcp.tool()
 def get_epg_evening():
@@ -186,7 +216,7 @@ def get_epg_evening():
     Lists the current and next program for all channels for the evening.
     """
     evening_time = datetime.datetime.now().replace(hour=21, minute=30, second=0, microsecond=0)
-    return get_epg(evening_time)
+    return get_epg(evening_time.timestamp())
 
 if __name__ == "__main__":
     results = get_epg_evening()
