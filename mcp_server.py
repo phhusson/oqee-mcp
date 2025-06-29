@@ -63,9 +63,20 @@ def play_channel(channel_name):
     except json.JSONDecodeError:
         print("Error parsing service plan response.")
 
+@mcp.tool()
+def search_content(query):
+    """
+    Searches for content on OQEE.
+    """
+    try:
+        response = requests.get(f"https://api.oqee.net/api/v3/search/{query}")
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error searching for content: {e}")
+        return None
+
 if __name__ == "__main__":
-    url = play_channel("TF1")
-    if url:
-        print(f"URL for TF1: {url}")
-    else:
-        print("Could not find URL for TF1.")
+    results = search_content("Envoyé spécial")
+    if results:
+        print(json.dumps(results, indent=2))
